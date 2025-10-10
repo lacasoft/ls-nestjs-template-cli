@@ -1,0 +1,12 @@
+{
+  "templates": {
+    "base-nestjs": {
+      "name": "Base NestJS",
+      "description": "Estructura básica de NestJS sin características adicionales",
+      "version": "1.0.0",
+      "category": "basic",
+      "tags": ["basic", "starter"],
+      "features": ["core"]
+    }
+  }
+}
