@@ -115,9 +115,17 @@ tests/                 # Tests unitarios
 # Desarrollo
 npm run dev              # Ejecutar en modo desarrollo
 npm run build           # Compilar TypeScript
+
+# Testing
 npm test                # Ejecutar tests
 npm run test:watch      # Tests en modo watch
 npm run test:cov        # Cobertura de tests
+
+# Linting y Formateo
+npm run lint            # Verificar código con ESLint
+npm run lint:fix        # Corregir problemas de ESLint automáticamente
+npm run format          # Formatear código con Prettier
+npm run format:check    # Verificar formato sin modificar archivos
 ```
 
 ### Agregar un Nuevo Template
@@ -177,10 +185,7 @@ Todas las variables en `TemplateVariables` (src/utils/template-processor.ts):
  * @param projectPath - Ruta del proyecto
  * @param variables - Variables del template
  */
-async function generateEnvFiles(
-  projectPath: string,
-  variables: TemplateVariables
-): Promise<void> {
+async function generateEnvFiles(projectPath: string, variables: TemplateVariables): Promise<void> {
   // Implementation
 }
 ```
@@ -214,6 +219,13 @@ describe('EnvGenerator', () => {
 
 ## 📝 Commits
 
+Este proyecto usa **validación automática de commits** con:
+
+- ✅ **Husky**: Git hooks automatizados
+- ✅ **Commitlint**: Validación de formato de commits
+- ✅ **Prettier**: Formateo automático de código
+- ✅ **ESLint**: Linting de TypeScript
+
 ### Formato de Commit
 
 Usa [Conventional Commits](https://www.conventionalcommits.org/):
@@ -226,23 +238,65 @@ Usa [Conventional Commits](https://www.conventionalcommits.org/):
 [footer opcional]
 ```
 
-### Tipos
+### Tipos Permitidos
 
 - `feat`: Nueva funcionalidad
 - `fix`: Corrección de bug
 - `docs`: Cambios en documentación
 - `style`: Formateo, sin cambios de código
 - `refactor`: Refactorización de código
+- `perf`: Mejoras de rendimiento
 - `test`: Agregar o modificar tests
-- `chore`: Tareas de mantenimiento
+- `chore`: Tareas de mantenimiento (dependencias, configs, etc)
+- `revert`: Revertir un commit anterior
+- `build`: Cambios en build system o dependencias
+- `ci`: Cambios en CI/CD
 
-### Ejemplos
+### Validaciones Automáticas
+
+Cuando hagas `git commit`, el sistema automáticamente:
+
+1. **Pre-commit hook** (antes del commit):
+   - ✅ Ejecuta **Prettier** en archivos modificados
+   - ✅ Ejecuta **ESLint** con auto-fix en archivos TypeScript
+   - ❌ **Bloquea el commit** si hay errores de linting
+
+2. **Commit-msg hook** (valida el mensaje):
+   - ✅ Verifica que el mensaje siga el formato Conventional Commits
+   - ✅ Valida que el tipo sea uno de los permitidos
+   - ✅ Verifica que el scope esté en lowercase
+   - ✅ Máximo 100 caracteres en el header
+   - ❌ **Rechaza el commit** si no cumple las reglas
+
+### Ejemplos Válidos
 
 ```bash
-feat(templates): add GraphQL API template
-fix(env-generator): correct MySQL port configuration
-docs(readme): update installation instructions
-test(template-processor): add tests for variable replacement
+✅ feat(templates): add GraphQL API template
+✅ fix(env-generator): correct MySQL port configuration
+✅ docs(readme): update installation instructions
+✅ test(template-processor): add tests for variable replacement
+✅ chore(deps): update typescript to v5.0.0
+```
+
+### Ejemplos Inválidos
+
+```bash
+❌ Add new template                    # Falta tipo y scope
+❌ feat add template                   # Falta paréntesis en scope
+❌ FEAT(templates): add template       # Tipo debe estar en lowercase
+❌ feat(Templates): add template       # Scope debe estar en lowercase
+❌ feat(templates) add template        # Falta dos puntos después del scope
+```
+
+### Bypass de Validaciones (NO RECOMENDADO)
+
+Solo en casos extremos, puedes hacer bypass con:
+
+```bash
+# Bypass de pre-commit (NO ejecuta prettier/eslint)
+git commit --no-verify -m "feat(scope): message"
+
+# ⚠️ NO SE RECOMIENDA - Puede introducir código sin formatear
 ```
 
 ## 🔄 Pull Requests
@@ -260,20 +314,25 @@ test(template-processor): add tests for variable replacement
 **Título**: Claro y descriptivo
 
 **Descripción**:
+
 ```markdown
 ## Descripción
+
 Breve descripción de los cambios
 
 ## Tipo de cambio
+
 - [ ] Bug fix
 - [ ] Nueva funcionalidad
 - [ ] Breaking change
 - [ ] Documentación
 
 ## ¿Cómo se ha probado?
+
 Describe las pruebas realizadas
 
 ## Checklist
+
 - [ ] Tests agregados/actualizados
 - [ ] Documentación actualizada
 - [ ] Cambios probados localmente
@@ -295,6 +354,7 @@ Describe las pruebas realizadas
 Descripción clara y concisa del bug.
 
 **Pasos para reproducir**
+
 1. Ejecutar '...'
 2. Con opciones '...'
 3. Ver error
@@ -309,10 +369,11 @@ Lo que realmente sucede.
 Si aplica, agrega capturas.
 
 **Entorno:**
- - OS: [e.g. Ubuntu 22.04]
- - Node: [e.g. 18.16.0]
- - npm: [e.g. 9.5.1]
- - CLI Version: [e.g. 1.0.0]
+
+- OS: [e.g. Ubuntu 22.04]
+- Node: [e.g. 18.16.0]
+- npm: [e.g. 9.5.1]
+- CLI Version: [e.g. 1.0.0]
 
 **Contexto adicional**
 Cualquier otra información relevante.
@@ -337,6 +398,7 @@ Antes de enviar tu contribución:
 ## 📧 ¿Preguntas?
 
 Si tienes preguntas, puedes:
+
 - Abrir un issue con la etiqueta `question`
 - Contactar a los mantenedores directamente
 
