@@ -8,15 +8,9 @@ import { listTemplates } from './commands/list-templates';
 
 const program = new Command();
 
-console.log(
-  chalk.blue(
-    figlet.textSync('NestJS CLI', { horizontalLayout: 'full' })
-  )
-);
+console.log(chalk.blue(figlet.textSync('NestJS CLI', { horizontalLayout: 'full' })));
 
-program
-  .version('1.0.0')
-  .description('CLI para generar proyectos NestJS con múltiples templates');
+program.version('1.0.0').description('CLI para generar proyectos NestJS con múltiples templates');
 
 // Comando para listar templates
 program

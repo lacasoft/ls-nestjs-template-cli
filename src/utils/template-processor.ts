@@ -3,21 +3,52 @@ import path from 'path';
 import chalk from 'chalk';
 
 export interface TemplateVariables {
+  // Project Info
   projectName: string;
   projectDescription: string;
   version: string;
   author: string;
-  databaseUrl: string;
+  port: number;
+
+  // Security
   jwtSecret: string;
+  jwtExpiresIn: string;
+  jwtRefreshSecret: string;
+  jwtRefreshExpiresIn: string;
   apiKey: string;
   apiSecret: string;
-  port: number;
+
+  // Database
+  databaseType: string;
+  databaseUrl: string;
   databaseName: string;
   databaseUser: string;
   databasePassword: string;
   databaseHost: string;
   databasePort: number;
-  databaseType: string;
+
+  // Database Pool
+  dbPoolSize: number;
+  dbIdleTimeout: number;
+  dbConnectionTimeout: number;
+
+  // Performance
+  cacheTTL: number;
+  cacheMaxItems: number;
+  clusterWorkers: string;
+
+  // Rate Limiting
+  throttleTTL: number;
+  throttleLimit: number;
+
+  // CORS
+  allowedOrigins: string;
+
+  // Admin User
+  adminEmail: string;
+  adminPassword: string;
+  adminFirstName: string;
+  adminLastName: string;
 }
 
 export class TemplateProcessor {
@@ -68,29 +99,60 @@ export class TemplateProcessor {
       }
 
       await fs.writeFile(filePath, content, 'utf8');
-    } catch (error) {
+    } catch {
       // Ignorar archivos binarios
     }
   }
 
   private static replaceVariables(content: string, variables: TemplateVariables): string {
     const variableMap = {
+      // Project
       '{{projectName}}': variables.projectName,
       '{{projectNameKebab}}': variables.projectName.toLowerCase().replace(/\s+/g, '-'),
       '{{projectDescription}}': variables.projectDescription,
       '{{version}}': variables.version,
       '{{author}}': variables.author,
-      '{{databaseUrl}}': variables.databaseUrl,
+      '{{port}}': variables.port.toString(),
+
+      // Security
       '{{jwtSecret}}': variables.jwtSecret,
+      '{{jwtExpiresIn}}': variables.jwtExpiresIn,
+      '{{jwtRefreshSecret}}': variables.jwtRefreshSecret,
+      '{{jwtRefreshExpiresIn}}': variables.jwtRefreshExpiresIn,
       '{{apiKey}}': variables.apiKey,
       '{{apiSecret}}': variables.apiSecret,
-      '{{port}}': variables.port.toString(),
+
+      // Database
+      '{{databaseType}}': variables.databaseType,
+      '{{databaseUrl}}': variables.databaseUrl,
       '{{databaseName}}': variables.databaseName,
       '{{databaseUser}}': variables.databaseUser,
       '{{databasePassword}}': variables.databasePassword,
       '{{databaseHost}}': variables.databaseHost,
       '{{databasePort}}': variables.databasePort.toString(),
-      '{{databaseType}}': variables.databaseType,
+
+      // Database Pool
+      '{{dbPoolSize}}': variables.dbPoolSize.toString(),
+      '{{dbIdleTimeout}}': variables.dbIdleTimeout.toString(),
+      '{{dbConnectionTimeout}}': variables.dbConnectionTimeout.toString(),
+
+      // Performance
+      '{{cacheTTL}}': variables.cacheTTL.toString(),
+      '{{cacheMaxItems}}': variables.cacheMaxItems.toString(),
+      '{{clusterWorkers}}': variables.clusterWorkers,
+
+      // Rate Limiting
+      '{{throttleTTL}}': variables.throttleTTL.toString(),
+      '{{throttleLimit}}': variables.throttleLimit.toString(),
+
+      // CORS
+      '{{allowedOrigins}}': variables.allowedOrigins,
+
+      // Admin User
+      '{{adminEmail}}': variables.adminEmail,
+      '{{adminPassword}}': variables.adminPassword,
+      '{{adminFirstName}}': variables.adminFirstName,
+      '{{adminLastName}}': variables.adminLastName,
     };
 
     let processedContent = content;

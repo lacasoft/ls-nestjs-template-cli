@@ -6,7 +6,8 @@ import { TemplateManager } from '../generators/template-manager';
 import { TemplateProcessor, TemplateVariables } from '../utils/template-processor';
 import { EnvGenerator } from '../utils/env-generator';
 
-export async function createProject(this: any, projectName?: string, options?: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function createProject(this: any, projectName?: string, _options?: any) {
   const templateManager = new TemplateManager();
 
   console.log(chalk.green('🚀 NestJS Template CLI - Create Project\n'));
@@ -18,7 +19,7 @@ export async function createProject(this: any, projectName?: string, options?: a
       message: 'Nombre del proyecto:',
       default: projectName || 'my-nestjs-app',
       validate: (input: string) => {
-        if (/^([A-Za-z\-\_\d])+$/.test(input)) return true;
+        if (/^([A-Za-z\-_\d])+$/.test(input)) return true;
         return 'Nombre inválido. Use solo letras, números, guiones y guiones bajos.';
       },
     },
@@ -28,7 +29,7 @@ export async function createProject(this: any, projectName?: string, options?: a
       message: 'Selecciona el template base:',
       choices: () => {
         const templates = templateManager.getAvailableTemplates();
-        return templates.map(template => ({
+        return templates.map((template) => ({
           name: `${template.config.name} - ${template.config.description}`,
           value: template.id,
         }));
@@ -79,7 +80,8 @@ export async function createProject(this: any, projectName?: string, options?: a
       type: 'input',
       name: 'databaseName',
       message: 'Nombre de la base de datos:',
-      default: (answers: { projectName: string; }) => `${answers.projectName.toLowerCase().replace(/\s+/g, '_')}_dev`,
+      default: (answers: { projectName: string }) =>
+        `${answers.projectName.toLowerCase().replace(/\s+/g, '_')}_dev`,
       when: (answers) => answers.database,
     },
   ]);
@@ -88,27 +90,68 @@ export async function createProject(this: any, projectName?: string, options?: a
   const dbConfig = getDatabaseConfig(answers.databaseType);
 
   const templateVariables: TemplateVariables = {
+    // Project Info
     projectName: answers.projectName,
     projectDescription: answers.projectDescription,
     version: answers.version,
     author: answers.author,
     port: answers.port,
-    databaseUrl: generateDatabaseUrl(answers),
+
+    // Security
     jwtSecret: EnvGenerator.generateSecureSecret(),
+    jwtExpiresIn: '1d',
+    jwtRefreshSecret: EnvGenerator.generateSecureSecret(),
+    jwtRefreshExpiresIn: '7d',
     apiKey: EnvGenerator.generateSecureSecret(16),
     apiSecret: EnvGenerator.generateSecureSecret(24),
+
+    // Database
+    databaseType: answers.databaseType || 'postgres',
+    databaseUrl: generateDatabaseUrl(answers),
     databaseName: answers.databaseName || '',
     databaseUser: dbConfig.user,
     databasePassword: dbConfig.password,
     databaseHost: dbConfig.host,
     databasePort: dbConfig.port,
-    databaseType: answers.databaseType || 'postgres',
+
+    // Database Pool
+    dbPoolSize: 10,
+    dbIdleTimeout: 30000,
+    dbConnectionTimeout: 10000,
+
+    // Performance
+    cacheTTL: 300,
+    cacheMaxItems: 100,
+    clusterWorkers: 'auto',
+
+    // Rate Limiting
+    throttleTTL: 60000,
+    throttleLimit: 100,
+
+    // CORS
+    allowedOrigins: `http://localhost:${answers.port}`,
+
+    // Admin User
+    adminEmail: 'admin@example.com',
+    adminPassword: EnvGenerator.generateSecureSecret(16),
+    adminFirstName: 'Admin',
+    adminLastName: 'User',
   };
 
-  await generateProject(answers.projectName, answers.templateId, templateVariables, templateManager);
+  await generateProject(
+    answers.projectName,
+    answers.templateId,
+    templateVariables,
+    templateManager,
+  );
 }
 
-async function generateProject(projectName: string, templateId: string, variables: TemplateVariables, templateManager: TemplateManager) {
+async function generateProject(
+  projectName: string,
+  templateId: string,
+  variables: TemplateVariables,
+  templateManager: TemplateManager,
+) {
   const projectPath = path.resolve(process.cwd(), projectName);
 
   // Verificar si existe
@@ -144,10 +187,15 @@ async function generateProject(projectName: string, templateId: string, variable
 
   // Copiar template
   const templatePath = templateManager.getTemplatePath(templateId);
+  const globalPath = templateManager.getGlobalConfigPath();
 
   try {
     await fs.copy(templatePath, projectPath);
     console.log(chalk.green('✅ Template copiado correctamente'));
+
+    // Copiar archivos globales si no existen en el template
+    await copyGlobalFiles(globalPath, projectPath);
+    console.log(chalk.green('✅ Configuraciones globales aplicadas'));
 
     // Procesar templates
     await TemplateProcessor.processFiles(projectPath, variables);
@@ -156,7 +204,6 @@ async function generateProject(projectName: string, templateId: string, variable
     // Generar archivos de entorno
     await EnvGenerator.generateEnvFiles(projectPath, variables);
     console.log(chalk.green('✅ Archivos de entorno generados correctamente'));
-
   } catch (error) {
     console.log(chalk.red('❌ Error generando proyecto:'), error);
     return;
@@ -174,8 +221,28 @@ function displayNextSteps(projectName: string, variables: TemplateVariables) {
   console.log(chalk.blue(`\n📍 La aplicación estará en: http://localhost:${variables.port}`));
 }
 
+// Helper function to copy global configuration files
+async function copyGlobalFiles(globalPath: string, projectPath: string): Promise<void> {
+  const globalFiles = ['.gitignore', 'Dockerfile', '.dockerignore'];
+
+  for (const file of globalFiles) {
+    const globalFilePath = path.join(globalPath, file);
+    const projectFilePath = path.join(projectPath, file);
+
+    // Solo copiar si el archivo global existe y NO existe en el proyecto
+    if ((await fs.pathExists(globalFilePath)) && !(await fs.pathExists(projectFilePath))) {
+      await fs.copy(globalFilePath, projectFilePath);
+    }
+  }
+}
+
 // Helper function to get database configuration
-function getDatabaseConfig(databaseType: string): { user: string; password: string; host: string; port: number } {
+function getDatabaseConfig(databaseType: string): {
+  user: string;
+  password: string;
+  host: string;
+  port: number;
+} {
   switch (databaseType) {
     case 'postgres':
       return {
@@ -209,10 +276,12 @@ function getDatabaseConfig(databaseType: string): { user: string; password: stri
 }
 
 // Helper function
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateDatabaseUrl(details: any): string {
   if (!details.database) return '';
 
-  const dbName = details.databaseName || `${details.projectName.toLowerCase().replace(/\s+/g, '_')}_dev`;
+  const dbName =
+    details.databaseName || `${details.projectName.toLowerCase().replace(/\s+/g, '_')}_dev`;
   const dbType = details.databaseType;
 
   switch (dbType) {

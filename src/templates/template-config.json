@@ -7,6 +7,32 @@
       "category": "basic",
       "tags": ["basic", "starter"],
       "features": ["core"]
+    },
+    "api-complete": {
+      "name": "API Complete",
+      "description": "Template empresarial completo con autenticación JWT, métricas, seguridad, rate limiting, health checks y arquitectura modular",
+      "version": "1.0.0",
+      "category": "enterprise",
+      "tags": ["enterprise", "complete", "production-ready", "security"],
+      "features": [
+        "authentication",
+        "jwt",
+        "refresh-tokens",
+        "api-keys",
+        "rate-limiting",
+        "cors",
+        "helmet",
+        "swagger",
+        "typeorm",
+        "migrations",
+        "health-checks",
+        "prometheus-metrics",
+        "logging",
+        "caching",
+        "clustering",
+        "docker",
+        "multi-database"
+      ]
     }
   }
 }

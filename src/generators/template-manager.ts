@@ -45,7 +45,7 @@ export class TemplateManager {
   getAvailableTemplates(): { id: string; config: TemplateConfig }[] {
     return Object.entries(this.config.templates).map(([id, config]) => ({
       id,
-      config
+      config,
     }));
   }
 
@@ -62,11 +62,15 @@ export class TemplateManager {
     return path.join(this.templatesPath, templateId);
   }
 
+  getGlobalConfigPath(): string {
+    return path.join(this.templatesPath, '_global');
+  }
+
   listTemplatesByCategory(): { [category: string]: { id: string; config: TemplateConfig }[] } {
     const templates = this.getAvailableTemplates();
     const categorized: { [category: string]: { id: string; config: TemplateConfig }[] } = {};
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       if (!categorized[template.config.category]) {
         categorized[template.config.category] = [];
       }
@@ -81,14 +85,16 @@ export class TemplateManager {
 
     if (Object.keys(categorized).length === 0) {
       console.log(chalk.yellow('⚠️  No hay templates configurados.'));
-      console.log(chalk.white('   Crea directorios en templates/ y configura template-config.json'));
+      console.log(
+        chalk.white('   Crea directorios en templates/ y configura template-config.json'),
+      );
       return;
     }
 
     Object.entries(categorized).forEach(([category, templates]) => {
       console.log(chalk.yellow(`\n${category.toUpperCase()}:`));
 
-      templates.forEach(template => {
+      templates.forEach((template) => {
         console.log(chalk.white(`  🔸 ${chalk.green(template.id)}`));
         console.log(chalk.gray(`     ${template.config.description}`));
 

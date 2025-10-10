@@ -22,51 +22,84 @@ export class EnvGenerator {
   }
 
   private static generateEnvContent(variables: TemplateVariables): string {
-    const baseContent = `# Application
+    const appContent = `# App
 NODE_ENV=development
-PORT=${variables.port}
 APP_NAME=${variables.projectName}
-
-# Security
-JWT_SECRET=${variables.jwtSecret}
-JWT_EXPIRES_IN=1d
+PORT=${variables.port}
 API_KEY=${variables.apiKey}
 API_SECRET=${variables.apiSecret}
+JWT_SECRET=${variables.jwtSecret}
+JWT_EXPIRES_IN=${variables.jwtExpiresIn}
 `;
 
-    // Configuración específica según el tipo de base de datos
+    // Configuración de base de datos según el tipo
     let databaseContent = '';
     if (variables.databaseType === 'sqlite') {
       databaseContent = `
-# Database (SQLite)
+# Database
+# Supported types: postgres, mysql, mariadb, sqlite, mssql, oracle, cockroachdb, etc.
 DB_TYPE=sqlite
 DB_NAME=${variables.databaseName}
-DB_URL=${variables.databaseUrl}
 `;
     } else if (variables.databaseType === 'mysql') {
       databaseContent = `
-# Database (MySQL)
+# Database
+# Supported types: postgres, mysql, mariadb, sqlite, mssql, oracle, cockroachdb, etc.
 DB_TYPE=mysql
 DB_HOST=${variables.databaseHost}
 DB_PORT=${variables.databasePort}
 DB_USERNAME=${variables.databaseUser}
 DB_PASSWORD=${variables.databasePassword}
 DB_NAME=${variables.databaseName}
-DB_URL=${variables.databaseUrl}
 `;
     } else {
       // PostgreSQL por defecto
       databaseContent = `
-# Database (PostgreSQL)
+# Database
+# Supported types: postgres, mysql, mariadb, sqlite, mssql, oracle, cockroachdb, etc.
 DB_TYPE=postgres
 DB_HOST=${variables.databaseHost}
 DB_PORT=${variables.databasePort}
 DB_USERNAME=${variables.databaseUser}
 DB_PASSWORD=${variables.databasePassword}
 DB_NAME=${variables.databaseName}
-DB_URL=${variables.databaseUrl}
 `;
     }
+
+    const securityContent = `
+# Seguridad
+ALLOWED_ORIGINS=${variables.allowedOrigins}
+JWT_REFRESH_SECRET=${variables.jwtRefreshSecret}
+JWT_REFRESH_EXPIRES_IN=${variables.jwtRefreshExpiresIn}
+`;
+
+    const performanceContent = `
+# Performance
+CACHE_TTL=${variables.cacheTTL}
+CACHE_MAX_ITEMS=${variables.cacheMaxItems}
+CLUSTER_WORKERS=${variables.clusterWorkers}
+`;
+
+    const dbPoolContent = `
+# Database Pool
+DB_POOL_SIZE=${variables.dbPoolSize}
+DB_IDLE_TIMEOUT=${variables.dbIdleTimeout}
+DB_CONNECTION_TIMEOUT=${variables.dbConnectionTimeout}
+`;
+
+    const rateLimitContent = `
+# Rate Limiting
+THROTTLE_TTL=${variables.throttleTTL}
+THROTTLE_LIMIT=${variables.throttleLimit}
+`;
+
+    const adminContent = `
+# Admin User (Para seeder inicial)
+ADMIN_EMAIL=${variables.adminEmail}
+ADMIN_PASSWORD=${variables.adminPassword}
+ADMIN_FIRST_NAME=${variables.adminFirstName}
+ADMIN_LAST_NAME=${variables.adminLastName}
+`;
 
     const swaggerContent = `
 # Swagger
@@ -75,28 +108,61 @@ SWAGGER_DESCRIPTION=${variables.projectDescription}
 SWAGGER_VERSION=${variables.version}
 `;
 
-    return baseContent + databaseContent + swaggerContent;
+    return (
+      appContent +
+      databaseContent +
+      securityContent +
+      performanceContent +
+      dbPoolContent +
+      rateLimitContent +
+      adminContent +
+      swaggerContent
+    );
   }
 
-  private static generateEnvExampleContent(variables: TemplateVariables): string {
-    return `# Application
+  private static generateEnvExampleContent(_variables: TemplateVariables): string {
+    return `# App
 NODE_ENV=development
-PORT=3000
 APP_NAME=your-app-name
-
-# Security
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=1d
+PORT=3000
 API_KEY=your-api-key-here
 API_SECRET=your-api-secret-here
+JWT_SECRET=your-jwt-secret-key
+JWT_EXPIRES_IN=1d
 
 # Database
+# Supported types: postgres, mysql, mariadb, sqlite, mssql, oracle, cockroachdb, etc.
+DB_TYPE=postgres
 DB_HOST=localhost
 DB_PORT=5432
-DB_USERNAME=your-database-user
-DB_PASSWORD=your-database-password
-DB_NAME=your-database-name
-DB_URL=postgresql://user:pass@localhost:5432/db_name
+DB_USERNAME=postgres
+DB_PASSWORD=your-password-here
+DB_NAME=your_database_name
+
+# Seguridad
+ALLOWED_ORIGINS=http://localhost:3000,https://tudominio.com
+JWT_REFRESH_SECRET=your-refresh-secret-key
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Performance
+CACHE_TTL=300
+CACHE_MAX_ITEMS=100
+CLUSTER_WORKERS=auto
+
+# Database Pool
+DB_POOL_SIZE=10
+DB_IDLE_TIMEOUT=30000
+DB_CONNECTION_TIMEOUT=10000
+
+# Rate Limiting
+THROTTLE_TTL=60000
+THROTTLE_LIMIT=100
+
+# Admin User (Para seeder inicial)
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=YourSecurePassword123!
+ADMIN_FIRST_NAME=Admin
+ADMIN_LAST_NAME=User
 
 # Swagger
 SWAGGER_TITLE=Your API Title
