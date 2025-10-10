@@ -219,12 +219,32 @@ function displayNextSteps(projectName: string, variables: TemplateVariables) {
   console.log(chalk.white('  npm install'));
   console.log(chalk.white('  npm run start:dev'));
   console.log(chalk.blue(`\n📍 La aplicación estará en: http://localhost:${variables.port}`));
+
+  console.log(chalk.cyan('\n✨ El proyecto incluye validación automática de commits:'));
+  console.log(chalk.white('  • Husky: Git hooks automatizados'));
+  console.log(chalk.white('  • Commitlint: Validación de mensajes (Conventional Commits)'));
+  console.log(chalk.white('  • Prettier: Formateo automático de código'));
+  console.log(chalk.white('  • ESLint: Linting de TypeScript'));
+
+  console.log(chalk.yellow('\n💡 Formato de commits:'));
+  console.log(chalk.white('  tipo(scope): descripción'));
+  console.log(chalk.gray('  Ejemplo: feat(auth): add login endpoint'));
 }
 
 // Helper function to copy global configuration files
 async function copyGlobalFiles(globalPath: string, projectPath: string): Promise<void> {
-  const globalFiles = ['.gitignore', 'Dockerfile', '.dockerignore'];
+  const globalFiles = [
+    '.gitignore',
+    'Dockerfile',
+    '.dockerignore',
+    '.prettierrc',
+    'commitlint.config.js',
+    'eslint.config.mjs',
+  ];
 
+  const globalDirectories = ['.husky'];
+
+  // Copy individual files
   for (const file of globalFiles) {
     const globalFilePath = path.join(globalPath, file);
     const projectFilePath = path.join(projectPath, file);
@@ -232,6 +252,28 @@ async function copyGlobalFiles(globalPath: string, projectPath: string): Promise
     // Solo copiar si el archivo global existe y NO existe en el proyecto
     if ((await fs.pathExists(globalFilePath)) && !(await fs.pathExists(projectFilePath))) {
       await fs.copy(globalFilePath, projectFilePath);
+    }
+  }
+
+  // Copy directories
+  for (const dir of globalDirectories) {
+    const globalDirPath = path.join(globalPath, dir);
+    const projectDirPath = path.join(projectPath, dir);
+
+    // Solo copiar si el directorio global existe y NO existe en el proyecto
+    if ((await fs.pathExists(globalDirPath)) && !(await fs.pathExists(projectDirPath))) {
+      await fs.copy(globalDirPath, projectDirPath);
+
+      // Hacer ejecutables los hooks de husky
+      if (dir === '.husky') {
+        const hookFiles = await fs.readdir(projectDirPath);
+        for (const hook of hookFiles) {
+          const hookPath = path.join(projectDirPath, hook);
+          if ((await fs.stat(hookPath)).isFile()) {
+            await fs.chmod(hookPath, 0o755);
+          }
+        }
+      }
     }
   }
 }
