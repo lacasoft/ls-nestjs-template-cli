@@ -51,6 +51,7 @@ DB_PORT=${variables.databasePort}
 DB_USERNAME=${variables.databaseUser}
 DB_PASSWORD=${variables.databasePassword}
 DB_NAME=${variables.databaseName}
+DB_SSL=false
 `;
     } else {
       // PostgreSQL por defecto
@@ -63,6 +64,7 @@ DB_PORT=${variables.databasePort}
 DB_USERNAME=${variables.databaseUser}
 DB_PASSWORD=${variables.databasePassword}
 DB_NAME=${variables.databaseName}
+DB_SSL=false
 `;
     }
 
@@ -138,6 +140,7 @@ DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=your-password-here
 DB_NAME=your_database_name
+DB_SSL=false
 
 # Seguridad
 ALLOWED_ORIGINS=http://localhost:3000,https://tudominio.com

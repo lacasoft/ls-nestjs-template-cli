@@ -11,6 +11,7 @@
 - [Configuración](#-configuración)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Desarrollo](#-desarrollo)
+- [Sistema de Roles y Permisos](#-sistema-de-roles-y-permisos)
 - [Migraciones de Base de Datos](#-migraciones-de-base-de-datos)
 - [Testing](#-testing)
 - [Docker](#-docker)
@@ -23,6 +24,7 @@
 ### Seguridad
 
 - ✅ Autenticación JWT con refresh tokens
+- ✅ **Sistema completo de Roles y Permisos (RBAC)**
 - ✅ Validación de API Key/Secret
 - ✅ Rate limiting personalizado
 - ✅ Helmet para seguridad de headers HTTP
@@ -158,7 +160,8 @@ THROTTLE_LIMIT={{throttleLimit}}
 │   │   └── security.config.ts    # Config de seguridad
 │   │
 │   ├── database/                 # Base de datos
-│   │   └── migrations/           # Migraciones TypeORM
+│   │   ├── migrations/           # Migraciones TypeORM
+│   │   └── seeds/                # 🆕 Seeders (roles, permisos, admin)
 │   │
 │   ├── modules/                  # Módulos de negocio
 │   │   ├── auth/                 # Autenticación y autorización
@@ -172,6 +175,13 @@ THROTTLE_LIMIT={{throttleLimit}}
 │   │   │   ├── health.controller.ts
 │   │   │   ├── advanced-health.controller.ts
 │   │   │   └── health.module.ts
+│   │   │
+│   │   ├── roles/                # 🆕 Gestión de roles y permisos
+│   │   │   ├── dto/              # DTOs de roles y permisos
+│   │   │   ├── entities/         # Entidades Role y Permission
+│   │   │   ├── roles.controller.ts
+│   │   │   ├── roles.service.ts
+│   │   │   └── roles.module.ts
 │   │   │
 │   │   └── users/                # Gestión de usuarios
 │   │       ├── dto/              # DTOs de usuarios
@@ -240,6 +250,115 @@ nest g class modules/nombre-modulo/entities/nombre.entity --no-spec
 # Generar DTO
 nest g class modules/nombre-modulo/dto/create-nombre.dto --no-spec
 ```
+
+## 🔐 Sistema de Roles y Permisos
+
+El proyecto incluye un sistema completo de **RBAC (Role-Based Access Control)** con roles y permisos granulares.
+
+### Roles Predefinidos
+
+| Rol           | Descripción                    | Permisos            |
+| ------------- | ------------------------------ | ------------------- |
+| `super_admin` | Acceso total al sistema        | 18 permisos (todos) |
+| `admin`       | Administrador del sistema      | 11 permisos         |
+| `supervisor`  | Supervisor con acceso limitado | 8 permisos          |
+| `observer`    | Solo lectura                   | 4 permisos          |
+
+### Permisos Disponibles
+
+Los permisos siguen el patrón `resource:action`:
+
+**Usuarios:**
+
+- `users:create`, `users:read`, `users:update`, `users:delete`
+
+**Roles:**
+
+- `roles:create`, `roles:read`, `roles:update`, `roles:delete`
+
+**Permisos:**
+
+- `permissions:create`, `permissions:read`, `permissions:update`, `permissions:delete`
+
+**Reportes:**
+
+- `reports:create`, `reports:read`, `reports:export`
+
+**Configuración:**
+
+- `settings:read`, `settings:update`
+
+**Auditoría:**
+
+- `audit:read`
+
+### Uso de Guards
+
+```typescript
+// Proteger endpoint por roles
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleType.SUPER_ADMIN, RoleType.ADMIN)
+@Get('admin-data')
+getAdminData() {
+  // Solo accesible por super_admin y admin
+}
+
+// Proteger endpoint por permisos específicos
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Permissions('users:create', 'users:update')
+@Post('users')
+createUser() {
+  // Solo accesible con ambos permisos
+}
+```
+
+### Seeder de Roles y Permisos
+
+El proyecto incluye un seeder automático que crea:
+
+- 4 roles predefinidos
+- 18 permisos base
+- Usuario administrador con rol `super_admin`
+
+```bash
+# Ejecutar seeder (crea roles, permisos y admin)
+npm run seed:admin
+```
+
+**Variables de entorno para el admin:**
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=SecurePassword123!@#
+ADMIN_FIRST_NAME=Admin
+ADMIN_LAST_NAME=User
+```
+
+### API de Roles y Permisos
+
+**Endpoints disponibles:**
+
+```bash
+# Roles
+GET    /roles              # Listar todos los roles
+GET    /roles/:id          # Obtener rol por ID
+POST   /roles              # Crear nuevo rol
+PATCH  /roles/:id          # Actualizar rol
+DELETE /roles/:id          # Eliminar rol
+
+# Permisos
+GET    /roles/permissions/all     # Listar todos los permisos
+GET    /roles/permissions/:id     # Obtener permiso por ID
+POST   /roles/permissions         # Crear nuevo permiso
+PATCH  /roles/permissions/:id     # Actualizar permiso
+DELETE /roles/permissions/:id     # Eliminar permiso
+
+# Asignación de permisos a roles
+POST   /roles/:id/permissions     # Asignar permisos a rol
+DELETE /roles/:id/permissions     # Remover permisos de rol
+```
+
+Ver [TESTING_ROLES_PERMISSIONS.md](TESTING_ROLES_PERMISSIONS.md) para guía completa de testing.
 
 ## 🗄 Migraciones de Base de Datos
 

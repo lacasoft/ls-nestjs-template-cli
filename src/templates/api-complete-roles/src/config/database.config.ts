@@ -15,6 +15,6 @@ export default registerAs(
     logging: process.env.NODE_ENV !== 'production',
     migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
     migrationsRun: true,
-    ssl: process.env.DB_SSL === 'true',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   }),
 );

@@ -33,6 +33,43 @@
         "docker",
         "multi-database"
       ]
+    },
+    "api-complete-roles": {
+      "name": "API Complete with Roles",
+      "description": "Template empresarial completo con autenticación JWT, sistema de roles y permisos (RBAC), métricas, seguridad, rate limiting y arquitectura modular avanzada",
+      "version": "1.0.0",
+      "category": "enterprise",
+      "tags": [
+        "enterprise",
+        "complete",
+        "production-ready",
+        "security",
+        "rbac",
+        "roles",
+        "permissions"
+      ],
+      "features": [
+        "authentication",
+        "jwt",
+        "refresh-tokens",
+        "api-keys",
+        "rbac",
+        "roles",
+        "permissions",
+        "rate-limiting",
+        "cors",
+        "helmet",
+        "swagger",
+        "typeorm",
+        "migrations",
+        "health-checks",
+        "prometheus-metrics",
+        "logging",
+        "caching",
+        "clustering",
+        "docker",
+        "multi-database"
+      ]
     }
   }
 }
