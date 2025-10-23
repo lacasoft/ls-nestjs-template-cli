@@ -70,6 +70,36 @@
         "docker",
         "multi-database"
       ]
+    },
+    "api-subscriptions": {
+      "name": "API Subscriptions & Multi-Channel Payments",
+      "description": "API de Gestión de Suscripciones y Pagos Multicanal (Stripe, PayPal, Bancario)",
+      "version": "1.0.0",
+      "category": "enterprise",
+      "tags": [
+        "enterprise",
+        "payments",
+        "subscriptions",
+        "stripe",
+        "paypal",
+        "banking",
+        "billing"
+      ],
+      "features": [
+        "authentication",
+        "jwt",
+        "subscriptions",
+        "stripe-integration",
+        "paypal-integration",
+        "bank-transfers",
+        "recurring-billing",
+        "payment-webhooks",
+        "invoice-generation",
+        "payment-methods",
+        "typeorm",
+        "swagger",
+        "multi-database"
+      ]
     }
   }
 }

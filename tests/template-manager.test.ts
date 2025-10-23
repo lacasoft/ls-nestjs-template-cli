@@ -20,6 +20,13 @@ describe('TemplateManager', () => {
       const baseTemplate = templates.find(t => t.id === 'base-nestjs');
       expect(baseTemplate).toBeDefined();
     });
+
+    it('should include api-subscriptions template', () => {
+      const templates = templateManager.getAvailableTemplates();
+      const subscriptionsTemplate = templates.find(t => t.id === 'api-subscriptions');
+      expect(subscriptionsTemplate).toBeDefined();
+      expect(subscriptionsTemplate?.config.name).toBe('API Subscriptions & Multi-Channel Payments');
+    });
   });
 
   describe('getTemplate', () => {
@@ -27,6 +34,17 @@ describe('TemplateManager', () => {
       const template = templateManager.getTemplate('base-nestjs');
       expect(template).toBeDefined();
       expect(template?.name).toBe('Base NestJS');
+    });
+
+    it('should return api-subscriptions template config', () => {
+      const template = templateManager.getTemplate('api-subscriptions');
+      expect(template).toBeDefined();
+      expect(template?.name).toBe('API Subscriptions & Multi-Channel Payments');
+      expect(template?.category).toBe('enterprise');
+      expect(template?.tags).toContain('payments');
+      expect(template?.tags).toContain('subscriptions');
+      expect(template?.features).toContain('stripe-integration');
+      expect(template?.features).toContain('paypal-integration');
     });
 
     it('should return null for invalid template id', () => {
@@ -38,6 +56,11 @@ describe('TemplateManager', () => {
   describe('templateExists', () => {
     it('should return true for existing template', () => {
       const exists = templateManager.templateExists('base-nestjs');
+      expect(exists).toBe(true);
+    });
+
+    it('should return true for api-subscriptions template', () => {
+      const exists = templateManager.templateExists('api-subscriptions');
       expect(exists).toBe(true);
     });
 
@@ -68,6 +91,14 @@ describe('TemplateManager', () => {
       const basicTemplates = categorized['basic'];
       const hasBaseNestjs = basicTemplates.some(t => t.id === 'base-nestjs');
       expect(hasBaseNestjs).toBe(true);
+    });
+
+    it('should include api-subscriptions in enterprise category', () => {
+      const categorized = templateManager.listTemplatesByCategory();
+      const enterpriseTemplates = categorized['enterprise'];
+      expect(enterpriseTemplates).toBeDefined();
+      const hasSubscriptions = enterpriseTemplates.some(t => t.id === 'api-subscriptions');
+      expect(hasSubscriptions).toBe(true);
     });
   });
 });

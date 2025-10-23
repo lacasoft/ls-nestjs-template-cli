@@ -2,20 +2,21 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  eslint.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     ignores: [
-      'dist/',
-      'node_modules/',
-      'coverage/',
-      '*.test.ts',
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '**/*.test.ts',
+      '**/*.spec.ts',
       'commitlint.config.js',
       'eslint.config.mjs',
-      'src/templates/**/*',
-      'tests/**/*',
+      'src/templates/**',
+      'tests/**',
     ],
   },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     languageOptions: {
       parserOptions: {

@@ -16,9 +16,16 @@ export class EnvGenerator {
     const envContent = this.generateEnvContent(variables);
     await fs.writeFile(path.join(projectPath, '.env'), envContent);
 
-    // .env.example
-    const envExampleContent = this.generateEnvExampleContent(variables);
-    await fs.writeFile(path.join(projectPath, '.env.example'), envExampleContent);
+    // .env.example - Solo generar si no existe uno en el template
+    const envExamplePath = path.join(projectPath, '.env.example');
+    const envExampleExists = await fs.pathExists(envExamplePath);
+
+    if (!envExampleExists) {
+      const envExampleContent = this.generateEnvExampleContent(variables);
+      await fs.writeFile(envExamplePath, envExampleContent);
+    } else {
+      console.log(chalk.gray('  ℹ️  Usando .env.example del template'));
+    }
   }
 
   private static generateEnvContent(variables: TemplateVariables): string {
