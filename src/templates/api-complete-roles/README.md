@@ -25,36 +25,44 @@
 
 - ✅ Autenticación JWT con refresh tokens
 - ✅ **Sistema completo de Roles y Permisos (RBAC)**
+- ✅ Token blacklist para logout seguro
 - ✅ Validación de API Key/Secret
-- ✅ Rate limiting personalizado
+- ✅ Rate limiting personalizado por endpoint
 - ✅ Helmet para seguridad de headers HTTP
 - ✅ CORS configurable
 - ✅ Sanitización de inputs
 - ✅ Encriptación de contraseñas con bcrypt
 - ✅ Validación robusta de contraseñas
+- ✅ Protección del último super admin
 
 ### Rendimiento
 
-- ✅ Caché en memoria (cache-manager)
+- ✅ Caché Redis para sesiones y permisos
+- ✅ Caché inteligente de permisos de usuario
 - ✅ Compresión de respuestas HTTP
 - ✅ Clustering para multi-core
 - ✅ Connection pooling de base de datos
+- ✅ Paginación en todos los endpoints de listado
 
 ### Observabilidad
 
 - ✅ Logging estructurado (Winston)
-- ✅ Health checks (Terminus)
+- ✅ Health checks completos (Database, Redis, Email, Memory, Disk)
+- ✅ Health checks individuales por servicio
 - ✅ Métricas Prometheus
-- ✅ Documentación Swagger/OpenAPI
+- ✅ Documentación Swagger/OpenAPI completa
 
 ### Desarrollo
 
 - ✅ TypeScript strict mode
 - ✅ ESLint + Prettier
 - ✅ Hot reload
-- ✅ Testing (Jest)
-- ✅ Migraciones TypeORM
+- ✅ Testing unitario y E2E (Jest)
+- ✅ Migraciones TypeORM automáticas
+- ✅ Seeders para roles, permisos y super admin
 - ✅ Docker multi-stage build
+- ✅ Soft delete en roles y permisos
+- ✅ Gestión completa de preferencias de usuario
 
 ## 🛠 Tecnologías
 
@@ -63,19 +71,24 @@
 - **Lenguaje**: TypeScript 5.x
 - **Base de Datos**: {{databaseType}}
 - **ORM**: TypeORM 0.3.x
+- **Caché**: Redis (cache-manager)
 - **Autenticación**: Passport + JWT
 - **Validación**: class-validator + class-transformer
+- **Email**: Nodemailer con plantillas Handlebars
 - **Documentación**: Swagger/OpenAPI
 - **Testing**: Jest
 - **Logging**: Winston
 - **Métricas**: Prometheus
+- **Health Checks**: @nestjs/terminus
 
 ## 📦 Requisitos Previos
 
 - Node.js >= 22.14.0
 - npm >= 10.x
 - {{databaseType}} (base de datos)
+- Redis >= 7.x (para caché y sesiones)
 - Docker (opcional)
+- SMTP server (para envío de emails)
 
 ## 🔧 Instalación
 
@@ -184,8 +197,16 @@ THROTTLE_LIMIT={{throttleLimit}}
 │   │   │   └── roles.module.ts
 │   │   │
 │   │   └── users/                # Gestión de usuarios
+│   │       ├── constants/        # Cache keys y constantes
 │   │       ├── dto/              # DTOs de usuarios
+│   │       │   ├── create-user.dto.ts
+│   │       │   ├── update-profile.dto.ts
+│   │       │   ├── change-password.dto.ts
+│   │       │   ├── update-preferences.dto.ts
+│   │       │   └── user-permissions-response.dto.ts
 │   │       ├── entities/         # Entidades TypeORM
+│   │       │   ├── user.entity.ts
+│   │       │   └── user-preferences.entity.ts
 │   │       ├── repositories/     # Repositorios personalizados
 │   │       ├── users.controller.ts
 │   │       ├── users.service.ts
@@ -339,26 +360,111 @@ ADMIN_LAST_NAME=User
 **Endpoints disponibles:**
 
 ```bash
-# Roles
-GET    /roles              # Listar todos los roles
+# Roles (con paginación)
+GET    /roles              # Listar todos los roles (paginado)
+                          # Query params: page, limit, sortBy, sortOrder
 GET    /roles/:id          # Obtener rol por ID
 POST   /roles              # Crear nuevo rol
 PATCH  /roles/:id          # Actualizar rol
-DELETE /roles/:id          # Eliminar rol
+DELETE /roles/:id          # Soft delete de rol
+PATCH  /roles/:id/restore  # Restaurar rol eliminado
 
-# Permisos
-GET    /roles/permissions/all     # Listar todos los permisos
+# Permisos (con paginación)
+GET    /roles/permissions/all     # Listar todos los permisos (paginado)
+                                  # Query params: page, limit, sortBy, sortOrder
 GET    /roles/permissions/:id     # Obtener permiso por ID
 POST   /roles/permissions         # Crear nuevo permiso
 PATCH  /roles/permissions/:id     # Actualizar permiso
-DELETE /roles/permissions/:id     # Eliminar permiso
+DELETE /roles/permissions/:id     # Soft delete de permiso
+PATCH  /roles/permissions/:id/restore  # Restaurar permiso eliminado
 
 # Asignación de permisos a roles
 POST   /roles/:id/permissions     # Asignar permisos a rol
 DELETE /roles/:id/permissions     # Remover permisos de rol
+
+# Usuarios (con paginación)
+GET    /users              # Listar todos los usuarios (paginado)
+                          # Query params: page, limit, sortBy, sortOrder
+GET    /users/me           # Obtener perfil del usuario actual
+PATCH  /users/me           # Actualizar perfil del usuario actual
+PATCH  /users/me/password  # Cambiar contraseña del usuario actual
+GET    /users/me/permissions      # Obtener permisos del usuario actual (cacheado)
+GET    /users/me/preferences      # Obtener preferencias del usuario
+PATCH  /users/me/preferences      # Actualizar preferencias del usuario
+GET    /users/:id          # Obtener usuario por ID
+POST   /users              # Crear nuevo usuario
+```
+
+**Características de paginación:**
+
+- `page`: Número de página (default: 1)
+- `limit`: Items por página (default: 10, max: 100)
+- `sortBy`: Campo para ordenar (default: createdAt)
+- `sortOrder`: Orden ASC o DESC (default: DESC)
+
+**Respuesta paginada:**
+
+```json
+{
+  "data": [...],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 5
+  }
+}
 ```
 
 Ver [TESTING_ROLES_PERMISSIONS.md](TESTING_ROLES_PERMISSIONS.md) para guía completa de testing.
+
+## 👤 Gestión de Usuarios
+
+### Características de Usuario
+
+El sistema incluye gestión completa del ciclo de vida de usuarios:
+
+**Perfil de Usuario:**
+
+- ✅ Actualización de perfil (nombre, apellido, teléfono)
+- ✅ Cambio de contraseña con validación
+- ✅ Gestión de preferencias personalizadas
+- ✅ Consulta de permisos propios (cacheado)
+
+**Preferencias de Usuario:**
+
+```typescript
+{
+  language: 'en' | 'es',           // Idioma preferido
+  theme: 'light' | 'dark' | 'auto', // Tema visual
+  currency: 'CLP' | 'USD' | 'EUR' | 'MXN' | 'ARS',
+  timezone: string,                 // Zona horaria
+  notifications: {
+    email: boolean,                 // Notificaciones por email
+    push: boolean,                  // Notificaciones push
+    sms: boolean                    // Notificaciones SMS
+  }
+}
+```
+
+**Gestión Administrativa (servicios disponibles):**
+
+- ✅ `deactivateUser(userId)` - Desactivar cuenta (protege último super admin)
+- ✅ `activateUser(userId)` - Reactivar cuenta desactivada
+- ✅ `removeUser(userId)` - Soft delete de usuario (protege último super admin)
+
+**Protección del Super Admin:**
+El sistema previene automáticamente:
+
+- ❌ Desactivación del último super admin activo
+- ❌ Eliminación del último super admin activo
+- ✅ Requiere crear otro super admin antes de realizar estas acciones
+
+**Caché de Permisos:**
+
+- Los permisos de usuario se cachean por 5 minutos (configurable)
+- Invalidación automática al cambiar roles o permisos
+- Caché separado para PermissionsGuard (optimización)
 
 ## 🗄 Migraciones de Base de Datos
 
@@ -511,12 +617,58 @@ Las contraseñas deben cumplir:
 
 ### Health Checks
 
-```bash
-# Health check básico
-GET /health
+El sistema incluye health checks completos para todos los servicios críticos:
 
-# Health check avanzado (database, memoria, disco)
-GET /health/advanced
+```bash
+# Health check completo (todos los servicios)
+GET /health
+# Verifica: Database, Redis, Email/SMTP, Memory (heap/RSS), Disk
+
+# Health checks individuales
+GET /health/db       # Solo base de datos
+GET /health/redis    # Solo Redis
+GET /health/email    # Solo servicio de email
+```
+
+**Servicios monitoreados:**
+
+- **Database**: Conexión PostgreSQL (timeout: 3s)
+- **Redis**: Conexión y operaciones
+- **SMTP**: Verificación de conexión de email
+- **Memory Heap**: Alerta si > 300MB
+- **Memory RSS**: Alerta si > 500MB
+- **Disk**: Alerta si > 90% de uso
+
+**Respuesta exitosa (HTTP 200):**
+
+```json
+{
+  "status": "ok",
+  "info": {
+    "database": { "status": "up" },
+    "redis": { "status": "up" },
+    "smtp": { "status": "up" },
+    "memory_heap": { "status": "up" },
+    "memory_rss": { "status": "up" },
+    "disk": { "status": "up" }
+  },
+  "error": {},
+  "details": { ... }
+}
+```
+
+**Respuesta con fallas (HTTP 503):**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "redis": {
+      "status": "down",
+      "message": "Connection refused"
+    }
+  }
+}
 ```
 
 ### Métricas Prometheus
