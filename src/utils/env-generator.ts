@@ -12,20 +12,115 @@ export class EnvGenerator {
   static async generateEnvFiles(projectPath: string, variables: TemplateVariables): Promise<void> {
     console.log(chalk.blue('🔐 Generando archivos de entorno...'));
 
-    // .env
-    const envContent = this.generateEnvContent(variables);
-    await fs.writeFile(path.join(projectPath, '.env'), envContent);
-
-    // .env.example - Solo generar si no existe uno en el template
+    // .env.example - Verificar si existe uno en el template
     const envExamplePath = path.join(projectPath, '.env.example');
     const envExampleExists = await fs.pathExists(envExamplePath);
 
-    if (!envExampleExists) {
+    let envContent: string;
+
+    if (envExampleExists) {
+      // Si existe .env.example en el template, usarlo como base y reemplazar valores
+      console.log(chalk.gray('  ℹ️  Usando .env.example del template como base'));
+      const envExampleContent = await fs.readFile(envExamplePath, 'utf-8');
+      envContent = this.generateEnvFromTemplate(envExampleContent, variables);
+    } else {
+      // Si no existe, generar el contenido básico y también el .env.example
+      envContent = this.generateEnvContent(variables);
       const envExampleContent = this.generateEnvExampleContent(variables);
       await fs.writeFile(envExamplePath, envExampleContent);
-    } else {
-      console.log(chalk.gray('  ℹ️  Usando .env.example del template'));
     }
+
+    // Escribir .env
+    await fs.writeFile(path.join(projectPath, '.env'), envContent);
+  }
+
+  /**
+   * Genera el contenido del .env basándose en el .env.example del template
+   * Reemplaza los placeholders y valores por defecto con los valores reales
+   */
+  private static generateEnvFromTemplate(
+    templateContent: string,
+    variables: TemplateVariables,
+  ): string {
+    let content = templateContent;
+
+    // Mapa de reemplazos: variable -> valor
+    const replacements: Record<string, string> = {
+      // App
+      APP_NAME: variables.projectName,
+      PORT: variables.port.toString(),
+      API_KEY: variables.apiKey,
+      API_SECRET: variables.apiSecret,
+
+      // JWT
+      JWT_SECRET: variables.jwtSecret,
+      JWT_EXPIRES_IN: variables.jwtExpiresIn,
+      JWT_REFRESH_SECRET: variables.jwtRefreshSecret,
+      JWT_REFRESH_EXPIRES_IN: variables.jwtRefreshExpiresIn,
+
+      // Database
+      DB_TYPE: variables.databaseType,
+      DB_HOST: variables.databaseHost,
+      DB_PORT: variables.databasePort.toString(),
+      DB_USERNAME: variables.databaseUser,
+      DB_PASSWORD: variables.databasePassword,
+      DB_NAME: variables.databaseName,
+
+      // Security
+      ALLOWED_ORIGINS: variables.allowedOrigins,
+
+      // Cache
+      CACHE_TTL: variables.cacheTTL.toString(),
+      CACHE_MAX_ITEMS: variables.cacheMaxItems.toString(),
+      CLUSTER_WORKERS: variables.clusterWorkers,
+
+      // Database Pool
+      DB_POOL_SIZE: variables.dbPoolSize.toString(),
+      DB_IDLE_TIMEOUT: variables.dbIdleTimeout.toString(),
+      DB_CONNECTION_TIMEOUT: variables.dbConnectionTimeout.toString(),
+
+      // Rate Limiting
+      THROTTLE_TTL: variables.throttleTTL.toString(),
+      THROTTLE_LIMIT: variables.throttleLimit.toString(),
+
+      // Admin/Super Admin
+      ADMIN_EMAIL: variables.adminEmail,
+      ADMIN_PASSWORD: variables.adminPassword,
+      ADMIN_FIRST_NAME: variables.adminFirstName,
+      ADMIN_LAST_NAME: variables.adminLastName,
+      SUPER_ADMIN_EMAIL: variables.adminEmail,
+      SUPER_ADMIN_PASSWORD: variables.adminPassword,
+      SUPER_ADMIN_FIRST_NAME: variables.adminFirstName,
+      SUPER_ADMIN_LAST_NAME: variables.adminLastName,
+
+      // Swagger
+      SWAGGER_TITLE: `${variables.projectName} API`,
+      SWAGGER_DESCRIPTION: variables.projectDescription,
+      SWAGGER_VERSION: variables.version,
+    };
+
+    // Reemplazar cada variable en el contenido
+    for (const [key, value] of Object.entries(replacements)) {
+      // Patrón: KEY=cualquier_valor_hasta_fin_de_linea, preservando comentarios
+      const regex = new RegExp(`^(${key}=)[^\\n]*(\\s*#[^\\n]*)?$`, 'gm');
+      content = content.replace(regex, (_match, prefix, comment) => {
+        return `${prefix}${value}${comment || ''}`;
+      });
+    }
+
+    // Limpiar placeholders <GENERATE_...> que quedaron (para variables que no están en el mapa)
+    content = content.replace(/<GENERATE[^>]*>/g, (match) => {
+      // Generar un valor seguro para placeholders no reemplazados
+      if (match.includes('64')) {
+        return this.generateSecureSecret(32); // 64 caracteres hex
+      }
+      if (match.includes('STRONG_PASSWORD')) {
+        return this.generateSecureSecret(16); // 32 caracteres hex para passwords
+      }
+      return this.generateSecureSecret(16); // 32 caracteres hex por defecto
+    });
+
+    return content;
   }
 
   private static generateEnvContent(variables: TemplateVariables): string {

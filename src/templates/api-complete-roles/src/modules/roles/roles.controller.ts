@@ -9,8 +9,17 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -44,13 +53,37 @@ export class RolesController {
 
   @Get()
   @Roles(RoleType.SUPER_ADMIN, RoleType.ADMIN, RoleType.SUPERVISOR)
-  @ApiOperation({ summary: 'Get all roles' })
+  @ApiOperation({ summary: 'Get all roles with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 100)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Sort field (default: createdAt)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order (default: DESC)',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns all roles',
+    description: 'Returns paginated list of roles',
   })
-  findAllRoles() {
-    return this.rolesService.findAllRoles();
+  findAllRoles(@Query() paginationDto: PaginationDto) {
+    return this.rolesService.findAllRoles(paginationDto);
   }
 
   @Get(':id')
@@ -82,15 +115,29 @@ export class RolesController {
   @Delete(':id')
   @Roles(RoleType.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a role' })
+  @ApiOperation({ summary: 'Soft delete a role' })
   @ApiParam({ name: 'id', description: 'Role UUID' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
-    description: 'Role deleted successfully',
+    description: 'Role soft deleted successfully',
   })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Role not found' })
   deleteRole(@Param('id') id: string) {
     return this.rolesService.deleteRole(id);
+  }
+
+  @Patch(':id/restore')
+  @Roles(RoleType.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Restore a soft-deleted role' })
+  @ApiParam({ name: 'id', description: 'Role UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Role restored successfully',
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Role not found' })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Role is not deleted' })
+  restoreRole(@Param('id') id: string) {
+    return this.rolesService.restoreRole(id);
   }
 
   @Post(':id/permissions')
@@ -135,13 +182,37 @@ export class RolesController {
 
   @Get('permissions/all')
   @Roles(RoleType.SUPER_ADMIN, RoleType.ADMIN, RoleType.SUPERVISOR)
-  @ApiOperation({ summary: 'Get all permissions' })
+  @ApiOperation({ summary: 'Get all permissions with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 100)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Sort field (default: createdAt)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order (default: DESC)',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns all permissions',
+    description: 'Returns paginated list of permissions',
   })
-  findAllPermissions() {
-    return this.rolesService.findAllPermissions();
+  findAllPermissions(@Query() paginationDto: PaginationDto) {
+    return this.rolesService.findAllPermissions(paginationDto);
   }
 
   @Get('permissions/:id')
@@ -179,11 +250,11 @@ export class RolesController {
   @Delete('permissions/:id')
   @Roles(RoleType.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a permission' })
+  @ApiOperation({ summary: 'Soft delete a permission' })
   @ApiParam({ name: 'id', description: 'Permission UUID' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
-    description: 'Permission deleted successfully',
+    description: 'Permission soft deleted successfully',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -191,5 +262,19 @@ export class RolesController {
   })
   deletePermission(@Param('id') id: string) {
     return this.rolesService.deletePermission(id);
+  }
+
+  @Patch('permissions/:id/restore')
+  @Roles(RoleType.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Restore a soft-deleted permission' })
+  @ApiParam({ name: 'id', description: 'Permission UUID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Permission restored successfully',
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Permission not found' })
+  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Permission is not deleted' })
+  restorePermission(@Param('id') id: string) {
+    return this.rolesService.restorePermission(id);
   }
 }

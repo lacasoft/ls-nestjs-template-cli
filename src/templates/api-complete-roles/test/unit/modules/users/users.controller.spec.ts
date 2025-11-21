@@ -111,20 +111,25 @@ describe('UsersController', () => {
   describe('findAll', () => {
     it('should return an array of users', async () => {
       const users = [mockUser, { ...mockUser, id: '2', email: 'test2@example.com' }];
-      mockUsersService.findAll.mockResolvedValue(users);
+      const paginatedResult = {
+        data: users,
+        meta: { total: 2, page: 1, limit: 10, totalPages: 1 },
+      };
+      mockUsersService.findAll.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({} as any);
 
-      expect(result).toEqual(users);
+      expect(result).toEqual(paginatedResult);
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array when no users exist', async () => {
-      mockUsersService.findAll.mockResolvedValue([]);
+      const paginatedResult = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+      mockUsersService.findAll.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({} as any);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(paginatedResult);
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
   });

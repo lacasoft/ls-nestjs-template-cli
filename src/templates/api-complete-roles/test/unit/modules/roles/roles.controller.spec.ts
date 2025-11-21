@@ -92,11 +92,15 @@ describe('RolesController', () => {
     describe('findAllRoles', () => {
       it('should return all roles', async () => {
         const roles = [mockRole, { ...mockRole, id: '2', name: RoleType.SUPERVISOR }];
-        mockRolesService.findAllRoles.mockResolvedValue(roles);
+        const paginatedResult = {
+          data: roles,
+          meta: { total: 2, page: 1, limit: 10, totalPages: 1 },
+        };
+        mockRolesService.findAllRoles.mockResolvedValue(paginatedResult);
 
-        const result = await controller.findAllRoles();
+        const result = await controller.findAllRoles({} as any);
 
-        expect(result).toEqual(roles);
+        expect(result).toEqual(paginatedResult);
         expect(service.findAllRoles).toHaveBeenCalledTimes(1);
       });
     });
@@ -204,11 +208,15 @@ describe('RolesController', () => {
     describe('findAllPermissions', () => {
       it('should return all permissions', async () => {
         const permissions = [mockPermission, { ...mockPermission, id: '2', name: 'users:write' }];
-        mockRolesService.findAllPermissions.mockResolvedValue(permissions);
+        const paginatedResult = {
+          data: permissions,
+          meta: { total: 2, page: 1, limit: 10, totalPages: 1 },
+        };
+        mockRolesService.findAllPermissions.mockResolvedValue(paginatedResult);
 
-        const result = await controller.findAllPermissions();
+        const result = await controller.findAllPermissions({} as any);
 
-        expect(result).toEqual(permissions);
+        expect(result).toEqual(paginatedResult);
         expect(service.findAllPermissions).toHaveBeenCalledTimes(1);
       });
     });

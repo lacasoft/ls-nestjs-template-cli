@@ -7,6 +7,7 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { PaginationDto, PaginatedResult, PaginationMeta } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class RolesService {
@@ -42,10 +43,21 @@ export class RolesService {
     return await this.roleRepository.save(role);
   }
 
-  async findAllRoles(): Promise<Role[]> {
-    return await this.roleRepository.find({
+  async findAllRoles(paginationDto?: PaginationDto): Promise<PaginatedResult<Role>> {
+    const { skip, take, sortBy, sortOrder } = paginationDto || new PaginationDto();
+
+    const [data, total] = await this.roleRepository.findAndCount({
       relations: ['permissions'],
+      skip,
+      take,
+      order: {
+        [sortBy ?? 'createdAt']: sortOrder,
+      },
     });
+
+    const meta = new PaginationMeta(total, paginationDto?.page || 1, paginationDto?.limit || 10);
+
+    return { data, meta };
   }
 
   async findRoleById(id: string): Promise<Role> {
@@ -91,7 +103,26 @@ export class RolesService {
 
   async deleteRole(id: string): Promise<void> {
     const role = await this.findRoleById(id);
-    await this.roleRepository.remove(role);
+    await this.roleRepository.softRemove(role);
+  }
+
+  async restoreRole(id: string): Promise<Role> {
+    const role = await this.roleRepository
+      .createQueryBuilder('role')
+      .withDeleted()
+      .where('role.id = :id', { id })
+      .getOne();
+
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+
+    if (!role.deletedAt) {
+      throw new ConflictException('Role is not deleted');
+    }
+
+    await this.roleRepository.restore(id);
+    return this.findRoleById(id);
   }
 
   async assignPermissions(roleId: string, permissionIds: string[]): Promise<Role> {
@@ -130,8 +161,20 @@ export class RolesService {
     return await this.permissionRepository.save(permission);
   }
 
-  async findAllPermissions(): Promise<Permission[]> {
-    return await this.permissionRepository.find();
+  async findAllPermissions(paginationDto?: PaginationDto): Promise<PaginatedResult<Permission>> {
+    const { skip, take, sortBy, sortOrder } = paginationDto || new PaginationDto();
+
+    const [data, total] = await this.permissionRepository.findAndCount({
+      skip,
+      take,
+      order: {
+        [sortBy ?? 'createdAt']: sortOrder,
+      },
+    });
+
+    const meta = new PaginationMeta(total, paginationDto?.page || 1, paginationDto?.limit || 10);
+
+    return { data, meta };
   }
 
   async findPermissionById(id: string): Promise<Permission> {
@@ -170,6 +213,25 @@ export class RolesService {
 
   async deletePermission(id: string): Promise<void> {
     const permission = await this.findPermissionById(id);
-    await this.permissionRepository.remove(permission);
+    await this.permissionRepository.softRemove(permission);
+  }
+
+  async restorePermission(id: string): Promise<Permission> {
+    const permission = await this.permissionRepository
+      .createQueryBuilder('permission')
+      .withDeleted()
+      .where('permission.id = :id', { id })
+      .getOne();
+
+    if (!permission) {
+      throw new NotFoundException(`Permission with ID ${id} not found`);
+    }
+
+    if (!permission.deletedAt) {
+      throw new ConflictException('Permission is not deleted');
+    }
+
+    await this.permissionRepository.restore(id);
+    return this.findPermissionById(id);
   }
 }

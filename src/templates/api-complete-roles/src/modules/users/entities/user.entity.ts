@@ -6,9 +6,11 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  OneToOne,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Role } from '../../roles/entities/role.entity';
+import { UserPreferences } from './user-preferences.entity';
 
 @Entity('users')
 export class User {
@@ -28,6 +30,9 @@ export class User {
   @Column({ nullable: true })
   lastName: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone?: string;
+
   @ManyToMany(() => Role, (role) => role.users, {
     eager: true,
   })
@@ -37,6 +42,12 @@ export class User {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @OneToOne(() => UserPreferences, (preferences) => preferences.user, {
+    cascade: true,
+    eager: false,
+  })
+  preferences?: UserPreferences;
 
   @Column({ default: true })
   isActive: boolean;
